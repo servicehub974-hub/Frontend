@@ -100,9 +100,9 @@ function ChatPane({ conv, meId, onBack }: { conv: Conversation; meId: string; on
       <div className="flex-none flex items-center justify-between border-b border-white/5 bg-[#0f0f11] px-4 py-3 shadow-sm z-10 w-full">
         <div className="flex items-center gap-3">
           <button onClick={onBack} className="flex h-9 w-9 items-center justify-center rounded-full text-white/60 hover:bg-white/10 hover:text-white transition-colors sm:hidden">
-            <ArrowLeft size={22} />
+            <ArrowLeft size="{22}"/>
           </button>
-          <Link href={`/channel/${conv.other.id}`} className="flex items-center gap-3 group">
+          <Link className="flex items-center gap-3 group" href="{`/channel/${conv.other.id}`}">
             <div className="relative">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={conv.other.avatar} alt="" className="h-10 w-10 rounded-full object-cover" />
@@ -193,7 +193,7 @@ function ChatPane({ conv, meId, onBack }: { conv: Conversation; meId: string; on
               className="max-h-32 min-h-[36px] w-full resize-none bg-transparent py-2 text-[15px] text-[#e4e6eb] outline-none placeholder:text-white/40 hide-scrollbar" 
             />
             <button className="shrink-0 p-1.5 text-[#a344ff] hover:text-[#b465ff] transition-colors">
-              <Smile size={24} strokeWidth={2} />
+              <Smile size="{24}" strokeWidth="{2}"/>
             </button>
           </div>
 
@@ -202,7 +202,7 @@ function ChatPane({ conv, meId, onBack }: { conv: Conversation; meId: string; on
             onClick={(e) => send(e, !text.trim())}
             className="shrink-0 pb-1.5 text-[#a344ff] transition-transform hover:scale-110 active:scale-95"
           >
-            {text.trim() ? <Send size={24} strokeWidth={2} /> : <ThumbsUp size={24} strokeWidth={2} />}
+            {text.trim() ? <Send size="{24}" strokeWidth="{2}"/> : <ThumbsUp size="{24}" strokeWidth="{2}"/>}
           </button>
         </div>
       </div>
@@ -251,7 +251,7 @@ function MessagesInner() {
   if (!user) return (
     <div className="flex h-screen w-full flex-col items-center justify-center px-6 text-center bg-[#0a0a0c]">
       <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-white/5">
-        <MessageSquare size={40} className="text-white/40" />
+        <MessageSquare className="text-white/40" size="{40}"/>
       </div>
       <h2 className="mb-2 text-2xl font-semibold text-white">Your Messages</h2>
       <p className="mb-8 max-w-sm text-[16px] text-white/50">Log in to chat with creators and view your conversation history.</p>
@@ -280,7 +280,7 @@ function MessagesInner() {
           {/* Search Bar */}
           <div className="flex-none px-4 pb-4">
             <div className="flex items-center rounded-full bg-[#2a2a2b] px-3 py-2 transition-colors focus-within:bg-[#3a3a3b]">
-              <Search size={18} className="text-[#8e8e93] shrink-0" />
+              <Search className="text-[#8e8e93] shrink-0" size="{18}"/>
               <input 
                 type="text" 
                 placeholder="Search Messenger" 
@@ -338,11 +338,11 @@ function MessagesInner() {
         {/* Main Chat Pane Container */}
         <div className={`min-w-0 flex-1 bg-[#0f0f11] h-full ${active ? "flex" : "hidden sm:flex"}`}>
           {activeConv ? (
-            <ChatPane conv={activeConv} meId={user.id} onBack={() => setActive(null)} />
+            <ChatPane conv="{activeConv}" meId="{user.id}" onBack="{()"> setActive(null)} />
           ) : (
             <div className="flex h-full w-full flex-col items-center justify-center text-center bg-[#0f0f11]">
               <div className="flex items-center justify-center w-24 h-24 rounded-full bg-white/5 mb-6">
-                <MessageSquare size={40} className="text-white/20" />
+                <MessageSquare className="text-white/20" size="{40}"/>
               </div>
               <p className="text-2xl font-semibold text-white/80">Select a chat</p>
               <p className="mt-2 text-[16px] text-white/40 max-w-sm">Choose from your existing conversations or start a new one.</p>
@@ -357,13 +357,11 @@ function MessagesInner() {
 
 export default function MessagesPage() {
   return (
-    <Suspense fallback={
-      <div className="flex h-screen w-full items-center justify-center bg-[#0a0a0c]">
+    <Suspense <div className="flex h-screen w-full items-center justify-center bg-[#0a0a0c]" fallback="{">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#a344ff] border-t-transparent"></div>
       </div>
     }>
-      <MessagesInner />
+      <MessagesInner/>
     </Suspense>
   );
 }
-```eof
