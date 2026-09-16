@@ -27,6 +27,9 @@ interface Msg { id: string; sender_id: string; body: string; created_at: string;
 function formatShortTime(dateString?: string) {
   if (!dateString) return "";
   const date = new Date(dateString);
+  // Invalid date check
+  if (isNaN(date.getTime())) return "";
+
   const now = new Date();
   const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
   
@@ -37,10 +40,11 @@ function formatShortTime(dateString?: string) {
   return `${Math.floor(diffInSeconds / 604800)}w`;
 }
 
-// চ্যাটের মাঝখানে ডিভাইডারের জন্য টাইম ফরম্যাট (যেমন: Tue 8:17 PM)
+// চ্যাটের মাঝখানে ডিভাইডারের জন্য টাইম ফরম্যাট (যেমন: 08:17 PM)
 function formatMessageTime(dateString?: string) {
   if (!dateString) return "";
   const d = new Date(dateString);
+  if (isNaN(d.getTime())) return "";
   return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
@@ -93,12 +97,12 @@ function ChatPane({ conv, meId, onBack }: { conv: Conversation; meId: string; on
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-[#0f0f11] sm:rounded-r-2xl">
+    <div className="flex h-full min-h-0 flex-col bg-[#0f0f11] w-full">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-white/5 bg-[#0f0f11] px-4 py-2.5 sm:rounded-tr-2xl shadow-sm z-10">
+      <div className="flex items-center justify-between border-b border-white/5 bg-[#0f0f11] px-4 py-3 shadow-sm z-10 w-full">
         <div className="flex items-center gap-3">
-          <button onClick={onBack} className="flex h-8 w-8 items-center justify-center rounded-full text-white/60 hover:bg-white/10 sm:hidden">
-            <ArrowLeft size={20} />
+          <button onClick={onBack} className="flex h-9 w-9 items-center justify-center rounded-full text-white/60 hover:bg-white/10 hover:text-white transition-colors sm:hidden">
+            <ArrowLeft size={22} />
           </button>
           <Link href={`/channel/${conv.other.id}`} className="flex items-center gap-3 group">
             <div className="relative">
@@ -112,7 +116,7 @@ function ChatPane({ conv, meId, onBack }: { conv: Conversation; meId: string; on
             </div>
           </Link>
         </div>
-        <div className="flex items-center gap-4 text-[#a344ff]"> {/* মেসেঞ্জারের মতো পার্পল আইকন */}
+        <div className="flex items-center gap-4 text-[#a344ff]">
           <Phone size={22} className="cursor-pointer transition-transform hover:scale-110" />
           <Video size={24} className="cursor-pointer transition-transform hover:scale-110" />
           <Info size={22} className="cursor-pointer transition-transform hover:scale-110" />
@@ -120,8 +124,8 @@ function ChatPane({ conv, meId, onBack }: { conv: Conversation; meId: string; on
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 min-h-0 overflow-y-auto px-4 py-5 hide-scrollbar">
-        <div className="flex flex-col">
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 py-5 hide-scrollbar w-full">
+        <div className="flex flex-col max-w-4xl mx-auto w-full">
           {(msgs ?? []).map((m, i) => {
             const mine = m.sender_id === meId;
             const nextMsg = msgs![i + 1];
@@ -144,16 +148,16 @@ function ChatPane({ conv, meId, onBack }: { conv: Conversation; meId: string; on
             return (
               <div key={m.id} className={`flex w-full flex-col ${isLastInGroup ? "mb-4" : "mb-0.5"}`}>
                 
-                {/* Time Divider (show randomly or at first of group - simple logic for now) */}
+                {/* Time Divider */}
                 {isFirstInGroup && (
-                  <div className="my-3 text-center text-xs text-white/40 font-medium">
+                  <div className="my-3 text-center text-[11px] text-white/40 font-medium">
                     {formatMessageTime(m.created_at)}
                   </div>
                 )}
 
-                <div className={`flex items-end gap-2 ${mine ? "justify-end" : "justify-start"}`}>
+                <div className={`flex items-end gap-2 w-full ${mine ? "justify-end" : "justify-start"}`}>
                   {!mine ? (
-                    <div className="w-7 shrink-0">
+                    <div className="w-8 shrink-0 flex justify-center">
                       {isLastInGroup && (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={conv.other.avatar} alt="" className="h-7 w-7 rounded-full object-cover" />
@@ -161,10 +165,10 @@ function ChatPane({ conv, meId, onBack }: { conv: Conversation; meId: string; on
                     </div>
                   ) : null}
                   
-                  <div className={`group relative max-w-[70%] px-3.5 py-2 text-[15px] ${roundedClass} ${
+                  <div className={`group relative max-w-[85%] sm:max-w-[70%] px-3.5 py-2 text-[15px] ${roundedClass} ${
                     mine 
-                      ? "bg-[#8124ff] text-white" // Messenger style purple
-                      : "bg-white/10 text-white/95"
+                      ? "bg-[#8124ff] text-white" 
+                      : "bg-[#2a2a2b] text-white/95"
                   }`}>
                     {m.body}
                   </div>
@@ -172,46 +176,48 @@ function ChatPane({ conv, meId, onBack }: { conv: Conversation; meId: string; on
               </div>
             );
           })}
-          <div ref={bottomRef} className="h-2" />
+          <div ref={bottomRef} className="h-4" />
         </div>
       </div>
 
       {/* Input Area */}
-      <div className="flex items-end gap-2.5 p-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
-        {/* Left Action Icons */}
-        <div className="flex shrink-0 items-center gap-3 pb-2 text-[#a344ff]">
-          <PlusCircle size={22} className="cursor-pointer hover:text-[#b465ff]" />
-          <ImageIcon size={22} className="cursor-pointer hover:text-[#b465ff] hidden sm:block" />
-          <Sticker size={22} className="cursor-pointer hover:text-[#b465ff] hidden sm:block" />
-        </div>
+      <div className="w-full flex items-end gap-2.5 p-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] bg-[#0f0f11]">
+        <div className="max-w-4xl mx-auto w-full flex items-end gap-2.5">
+          {/* Left Action Icons */}
+          <div className="flex shrink-0 items-center gap-3 pb-2 text-[#a344ff]">
+            <PlusCircle size={22} className="cursor-pointer hover:text-[#b465ff] transition-colors" />
+            <ImageIcon size={22} className="cursor-pointer hover:text-[#b465ff] transition-colors hidden sm:block" />
+            <Sticker size={22} className="cursor-pointer hover:text-[#b465ff] transition-colors hidden sm:block" />
+          </div>
 
-        {/* Input Box */}
-        <div className="flex-1 flex items-end rounded-[20px] bg-white/10 px-3 py-1 transition-colors focus-within:bg-white/15">
-          <textarea 
-            value={text} 
-            onChange={(e) => setText(e.target.value)} 
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                send();
-              }
-            }}
-            placeholder="Aa" 
-            rows={1}
-            className="max-h-32 min-h-[36px] w-full resize-none bg-transparent py-2 text-[15px] text-white outline-none placeholder:text-white/40 hide-scrollbar" 
-          />
-          <button className="shrink-0 p-1.5 text-[#a344ff] hover:text-[#b465ff]">
-            <Smile size={22} />
+          {/* Input Box */}
+          <div className="flex-1 flex items-end rounded-[20px] bg-[#2a2a2b] px-3 py-1 transition-colors focus-within:bg-[#343435]">
+            <textarea 
+              value={text} 
+              onChange={(e) => setText(e.target.value)} 
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  send();
+                }
+              }}
+              placeholder="Aa" 
+              rows={1}
+              className="max-h-32 min-h-[36px] w-full resize-none bg-transparent py-2 text-[15px] text-white outline-none placeholder:text-white/40 hide-scrollbar" 
+            />
+            <button className="shrink-0 p-1.5 text-[#a344ff] hover:text-[#b465ff] transition-colors">
+              <Smile size={22} />
+            </button>
+          </div>
+
+          {/* Right Action Icon (Like / Send) */}
+          <button 
+            onClick={(e) => send(e, !text.trim())}
+            className="shrink-0 pb-1.5 text-[#a344ff] transition-transform hover:scale-110 active:scale-95"
+          >
+            {text.trim() ? <Send size={24} /> : <ThumbsUp size={24} />}
           </button>
         </div>
-
-        {/* Right Action Icon (Like / Send) */}
-        <button 
-          onClick={(e) => send(e, !text.trim())}
-          className="shrink-0 pb-1.5 text-[#a344ff] transition-transform hover:scale-110 active:scale-95"
-        >
-          {text.trim() ? <Send size={24} /> : <ThumbsUp size={24} />}
-        </button>
       </div>
     </div>
   );
@@ -244,25 +250,25 @@ function MessagesInner() {
   }, [user, enabled, qc]);
 
   if (loading) return (
-    <div className="flex h-[50vh] items-center justify-center">
-      <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#a344ff] border-t-transparent"></div>
+    <div className="flex h-screen w-full items-center justify-center bg-[#0a0a0c]">
+      <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#a344ff] border-t-transparent"></div>
     </div>
   );
   
   if (!enabled) return (
-    <div className="flex h-[50vh] items-center justify-center text-white/50">
+    <div className="flex h-screen w-full items-center justify-center bg-[#0a0a0c] text-white/50">
       Messaging is currently disabled.
     </div>
   );
   
   if (!user) return (
-    <div className="flex h-[60vh] flex-col items-center justify-center px-6 text-center">
-      <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-white/5">
-        <MessageSquare size={32} className="text-white/40" />
+    <div className="flex h-screen w-full flex-col items-center justify-center px-6 text-center bg-[#0a0a0c]">
+      <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-white/5">
+        <MessageSquare size={40} className="text-white/40" />
       </div>
-      <h2 className="mb-2 text-xl font-semibold text-white">Your Messages</h2>
-      <p className="mb-8 max-w-sm text-[15px] text-white/50">Log in to chat with creators and view your conversation history.</p>
-      <button onClick={() => router.push("/login")} className="rounded-full bg-white px-8 py-2.5 font-semibold text-black">
+      <h2 className="mb-2 text-2xl font-semibold text-white">Your Messages</h2>
+      <p className="mb-8 max-w-sm text-[16px] text-white/50">Log in to chat with creators and view your conversation history.</p>
+      <button onClick={() => router.push("/login")} className="rounded-full bg-white px-8 py-3 font-semibold text-black transition-transform hover:scale-105">
         Log in
       </button>
     </div>
@@ -271,29 +277,30 @@ function MessagesInner() {
   const activeConv = convs?.find((c) => c.id === active) ?? null;
 
   return (
-    <div className="mx-auto flex h-[calc(100dvh-4rem)] w-full max-w-[1400px] overflow-hidden sm:h-[calc(100dvh-4.5rem)] sm:p-4">
-      <div className="flex w-full flex-col overflow-hidden sm:flex-row sm:rounded-2xl sm:border sm:border-white/10 sm:bg-black sm:shadow-2xl">
+    // ফুল স্ক্রিন লেআউট করার জন্য max-w-full এবং p-0 ব্যবহার করা হয়েছে
+    <div className="flex h-[100dvh] w-full max-w-full overflow-hidden bg-[#0a0a0c]">
+      <div className="flex w-full h-full overflow-hidden">
         
         {/* Sidebar List */}
-        <div className={`flex w-full flex-col border-r border-white/5 bg-[#0a0a0c] sm:w-[360px] sm:shrink-0 ${active ? "hidden sm:flex" : "flex"}`}>
+        <div className={`flex w-full flex-col border-r border-white/5 bg-[#0a0a0c] sm:w-[360px] lg:w-[400px] sm:shrink-0 h-full ${active ? "hidden sm:flex" : "flex"}`}>
           
           {/* Header */}
-          <div className="flex items-center justify-between px-4 pt-4 pb-2">
-            <h1 className="text-[24px] font-bold text-white">Chats</h1>
+          <div className="flex items-center justify-between px-4 pt-5 pb-3">
+            <h1 className="text-[26px] font-bold text-white tracking-tight">Chats</h1>
             <div className="flex gap-2">
-              <button className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20">
+              <button className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors">
                 <MoreHorizontal size={20} />
               </button>
-              <button className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20">
+              <button className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors">
                 <Edit size={18} />
               </button>
             </div>
           </div>
           
           {/* Search Bar */}
-          <div className="px-4 pb-3">
-            <div className="flex items-center rounded-full bg-white/10 px-3 py-2">
-              <Search size={18} className="text-white/40" />
+          <div className="px-4 pb-4">
+            <div className="flex items-center rounded-full bg-white/10 px-3 py-2 transition-colors focus-within:bg-white/15">
+              <Search size={18} className="text-white/40 shrink-0" />
               <input 
                 type="text" 
                 placeholder="Search Messenger" 
@@ -304,13 +311,13 @@ function MessagesInner() {
 
           {/* Filters */}
           <div className="flex gap-2 overflow-x-auto px-4 pb-3 hide-scrollbar">
-            <button className="rounded-full bg-[#1c1c1e] bg-white/10 px-3.5 py-1.5 text-[14px] font-medium text-white transition-colors hover:bg-white/20">
+            <button className="rounded-full bg-white/10 px-4 py-1.5 text-[14px] font-semibold text-white transition-colors hover:bg-white/20 whitespace-nowrap">
               All
             </button>
-            <button className="rounded-full px-3.5 py-1.5 text-[14px] font-medium text-white/70 transition-colors hover:bg-white/5">
+            <button className="rounded-full px-4 py-1.5 text-[14px] font-semibold text-white/70 transition-colors hover:bg-white/5 whitespace-nowrap">
               Unread
             </button>
-            <button className="rounded-full px-3.5 py-1.5 text-[14px] font-medium text-white/70 transition-colors hover:bg-white/5">
+            <button className="rounded-full px-4 py-1.5 text-[14px] font-semibold text-white/70 transition-colors hover:bg-white/5 whitespace-nowrap">
               Groups
             </button>
           </div>
@@ -318,14 +325,14 @@ function MessagesInner() {
           {/* Conversation List */}
           <div className="flex-1 overflow-y-auto px-2 hide-scrollbar">
             {!convs || convs.length === 0 ? (
-              <div className="px-4 py-8 text-center text-sm text-white/40">
+              <div className="px-4 py-8 text-center text-[15px] text-white/40">
                 No conversations yet. Message someone to start.
               </div>
             ) : (
-              <div className="flex flex-col gap-0.5">
+              <div className="flex flex-col gap-1 pb-4">
                 {convs.map((c) => (
                   <button key={c.id} onClick={() => setActive(c.id)}
-                    className={`group relative flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-left transition-all ${
+                    className={`group relative flex w-full items-center gap-3 rounded-[12px] px-2 py-2.5 text-left transition-colors ${
                       active === c.id ? "bg-white/10" : "hover:bg-white/5"
                     }`}
                   >
@@ -333,17 +340,17 @@ function MessagesInner() {
                     <div className="relative shrink-0">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={c.other.avatar} alt="" className="h-14 w-14 rounded-full object-cover" />
-                      <div className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-[#0a0a0c] bg-green-500" />
+                      <div className="absolute bottom-[2px] right-[2px] h-[14px] w-[14px] rounded-full border-2 border-[#0a0a0c] bg-green-500" />
                     </div>
 
                     {/* Text content */}
                     <div className="min-w-0 flex-1 py-1">
-                      <p className="truncate text-[15px] font-medium text-white">{c.other.name}</p>
-                      <div className="flex items-center gap-1 text-[13px]">
+                      <p className="truncate text-[16px] font-medium text-white/95">{c.other.name}</p>
+                      <div className="flex items-center gap-1 text-[13px] mt-0.5">
                         <p className={`truncate ${c.unread ? "font-semibold text-white" : "text-white/50"}`}>
                           {c.last_message || "Started a conversation"}
                         </p>
-                        <span className="shrink-0 text-white/50">·</span>
+                        <span className="shrink-0 text-white/50 px-0.5">·</span>
                         <span className="shrink-0 text-white/50">{formatShortTime(c.last_at)}</span>
                       </div>
                     </div>
@@ -351,7 +358,7 @@ function MessagesInner() {
                     {/* Unread Indicator */}
                     {c.unread > 0 && (
                       <div className="shrink-0 pr-2">
-                        <span className="block h-3 w-3 rounded-full bg-blue-500" />
+                        <span className="block h-3.5 w-3.5 rounded-full bg-[#a344ff]" />
                       </div>
                     )}
                   </button>
@@ -362,14 +369,16 @@ function MessagesInner() {
         </div>
 
         {/* Chat Pane Area */}
-        <div className={`min-w-0 flex-1 bg-[#0f0f11] ${active ? "flex" : "hidden sm:flex"}`}>
+        <div className={`min-w-0 flex-1 bg-[#0f0f11] h-full ${active ? "flex" : "hidden sm:flex"}`}>
           {activeConv ? (
             <ChatPane conv={activeConv} meId={user.id} onBack={() => setActive(null)} />
           ) : (
-            <div className="flex h-full w-full flex-col items-center justify-center text-center">
-              <MessageSquare size={48} className="mb-4 text-white/10" />
-              <p className="text-xl font-semibold text-white/80">Select a chat</p>
-              <p className="mt-1 text-[15px] text-white/40">Choose from your existing conversations or start a new one.</p>
+            <div className="flex h-full w-full flex-col items-center justify-center text-center bg-[#0f0f11]">
+              <div className="flex items-center justify-center w-24 h-24 rounded-full bg-white/5 mb-6">
+                <MessageSquare size={40} className="text-white/20" />
+              </div>
+              <p className="text-2xl font-semibold text-white/80">Select a chat</p>
+              <p className="mt-2 text-[16px] text-white/40 max-w-sm">Choose from your existing conversations or start a new one.</p>
             </div>
           )}
         </div>
@@ -381,8 +390,8 @@ function MessagesInner() {
 export default function MessagesPage() {
   return (
     <Suspense fallback={
-      <div className="flex h-screen w-full items-center justify-center">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#a344ff] border-t-transparent"></div>
+      <div className="flex h-screen w-full items-center justify-center bg-[#0a0a0c]">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#a344ff] border-t-transparent"></div>
       </div>
     }>
       <MessagesInner />
