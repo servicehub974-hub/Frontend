@@ -5,9 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { 
-  ArrowLeft, Send, MessageSquare, Info, MoreHorizontal, Edit, 
-  Search, Phone, Video, PlusCircle, ImageIcon, Smile, ThumbsUp,
-  Sticker
+  ArrowLeft, Send, MessageSquare, Search, Smile, ThumbsUp 
 } from "lucide-react";
 import { api, apiGet } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
@@ -27,7 +25,6 @@ interface Msg { id: string; sender_id: string; body: string; created_at: string;
 function formatShortTime(dateString?: string) {
   if (!dateString) return "";
   const date = new Date(dateString);
-  // Invalid date check
   if (isNaN(date.getTime())) return "";
 
   const now = new Date();
@@ -40,7 +37,7 @@ function formatShortTime(dateString?: string) {
   return `${Math.floor(diffInSeconds / 604800)}w`;
 }
 
-// চ্যাটের মাঝখানে ডিভাইডারের জন্য টাইম ফরম্যাট (যেমন: 08:17 PM)
+// চ্যাটের মাঝখানে ডিভাইডারের জন্য টাইম ফরম্যাট
 function formatMessageTime(dateString?: string) {
   if (!dateString) return "";
   const d = new Date(dateString);
@@ -97,9 +94,10 @@ function ChatPane({ conv, meId, onBack }: { conv: Conversation; meId: string; on
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-[#0f0f11] w-full">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-white/5 bg-[#0f0f11] px-4 py-3 shadow-sm z-10 w-full">
+    <div className="flex h-full w-full flex-col bg-[#0f0f11]">
+      
+      {/* Header - Fixed at Top */}
+      <div className="flex-none flex items-center justify-between border-b border-white/5 bg-[#0f0f11] px-4 py-3 shadow-sm z-10 w-full">
         <div className="flex items-center gap-3">
           <button onClick={onBack} className="flex h-9 w-9 items-center justify-center rounded-full text-white/60 hover:bg-white/10 hover:text-white transition-colors sm:hidden">
             <ArrowLeft size={22} />
@@ -112,18 +110,13 @@ function ChatPane({ conv, meId, onBack }: { conv: Conversation; meId: string; on
             </div>
             <div className="flex flex-col">
               <span className="text-[16px] font-bold text-white group-hover:underline">{conv.other.name}</span>
-              <span className="text-xs text-white/50">Active now</span>
+              <span className="text-[12px] font-medium text-white/50">Active now</span>
             </div>
           </Link>
         </div>
-        <div className="flex items-center gap-4 text-[#a344ff]">
-          <Phone size={22} className="cursor-pointer transition-transform hover:scale-110" />
-          <Video size={24} className="cursor-pointer transition-transform hover:scale-110" />
-          <Info size={22} className="cursor-pointer transition-transform hover:scale-110" />
-        </div>
       </div>
 
-      {/* Messages Area */}
+      {/* Messages Area - Scrollable */}
       <div className="flex-1 min-h-0 overflow-y-auto px-4 py-5 hide-scrollbar w-full">
         <div className="flex flex-col max-w-4xl mx-auto w-full">
           {(msgs ?? []).map((m, i) => {
@@ -136,7 +129,7 @@ function ChatPane({ conv, meId, onBack }: { conv: Conversation; meId: string; on
             const isLastInGroup = nextMsg?.sender_id !== m.sender_id;
             
             // বর্ডার রেডিয়াস লজিক (মেসেঞ্জারের মতো)
-            let roundedClass = "rounded-2xl";
+            let roundedClass = "rounded-[20px]";
             if (mine) {
               if (!isFirstInGroup) roundedClass += " rounded-tr-[5px]";
               if (!isLastInGroup) roundedClass += " rounded-br-[5px]";
@@ -146,11 +139,11 @@ function ChatPane({ conv, meId, onBack }: { conv: Conversation; meId: string; on
             }
 
             return (
-              <div key={m.id} className={`flex w-full flex-col ${isLastInGroup ? "mb-4" : "mb-0.5"}`}>
+              <div key={m.id} className={`flex w-full flex-col ${isLastInGroup ? "mb-4" : "mb-[2px]"}`}>
                 
                 {/* Time Divider */}
                 {isFirstInGroup && (
-                  <div className="my-3 text-center text-[11px] text-white/40 font-medium">
+                  <div className="my-3 text-center text-[12px] text-white/40 font-medium">
                     {formatMessageTime(m.created_at)}
                   </div>
                 )}
@@ -165,10 +158,10 @@ function ChatPane({ conv, meId, onBack }: { conv: Conversation; meId: string; on
                     </div>
                   ) : null}
                   
-                  <div className={`group relative max-w-[85%] sm:max-w-[70%] px-3.5 py-2 text-[15px] ${roundedClass} ${
+                  <div className={`group relative max-w-[85%] sm:max-w-[70%] px-4 py-2.5 text-[15px] ${roundedClass} ${
                     mine 
                       ? "bg-[#8124ff] text-white" 
-                      : "bg-[#2a2a2b] text-white/95"
+                      : "bg-[#2a2a2b] text-[#e4e6eb]"
                   }`}>
                     {m.body}
                   </div>
@@ -176,19 +169,13 @@ function ChatPane({ conv, meId, onBack }: { conv: Conversation; meId: string; on
               </div>
             );
           })}
-          <div ref={bottomRef} className="h-4" />
+          <div ref={bottomRef} className="h-2" />
         </div>
       </div>
 
-      {/* Input Area */}
-      <div className="w-full flex items-end gap-2.5 p-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] bg-[#0f0f11]">
-        <div className="max-w-4xl mx-auto w-full flex items-end gap-2.5">
-          {/* Left Action Icons */}
-          <div className="flex shrink-0 items-center gap-3 pb-2 text-[#a344ff]">
-            <PlusCircle size={22} className="cursor-pointer hover:text-[#b465ff] transition-colors" />
-            <ImageIcon size={22} className="cursor-pointer hover:text-[#b465ff] transition-colors hidden sm:block" />
-            <Sticker size={22} className="cursor-pointer hover:text-[#b465ff] transition-colors hidden sm:block" />
-          </div>
+      {/* Input Area - Fixed at Bottom */}
+      <div className="flex-none w-full bg-[#0f0f11] p-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] border-t border-transparent">
+        <div className="max-w-4xl mx-auto w-full flex items-end gap-3">
 
           {/* Input Box */}
           <div className="flex-1 flex items-end rounded-[20px] bg-[#2a2a2b] px-3 py-1 transition-colors focus-within:bg-[#343435]">
@@ -203,10 +190,10 @@ function ChatPane({ conv, meId, onBack }: { conv: Conversation; meId: string; on
               }}
               placeholder="Aa" 
               rows={1}
-              className="max-h-32 min-h-[36px] w-full resize-none bg-transparent py-2 text-[15px] text-white outline-none placeholder:text-white/40 hide-scrollbar" 
+              className="max-h-32 min-h-[36px] w-full resize-none bg-transparent py-2 text-[15px] text-[#e4e6eb] outline-none placeholder:text-white/40 hide-scrollbar" 
             />
             <button className="shrink-0 p-1.5 text-[#a344ff] hover:text-[#b465ff] transition-colors">
-              <Smile size={22} />
+              <Smile size={24} strokeWidth={2} />
             </button>
           </div>
 
@@ -215,7 +202,7 @@ function ChatPane({ conv, meId, onBack }: { conv: Conversation; meId: string; on
             onClick={(e) => send(e, !text.trim())}
             className="shrink-0 pb-1.5 text-[#a344ff] transition-transform hover:scale-110 active:scale-95"
           >
-            {text.trim() ? <Send size={24} /> : <ThumbsUp size={24} />}
+            {text.trim() ? <Send size={24} strokeWidth={2} /> : <ThumbsUp size={24} strokeWidth={2} />}
           </button>
         </div>
       </div>
@@ -274,65 +261,45 @@ function MessagesInner() {
     </div>
   );
 
-  const activeConv = convs?.find((c) => c.id === active) ?? null;
-
   return (
-    // ফুল স্ক্রিন লেআউট করার জন্য max-w-full এবং p-0 ব্যবহার করা হয়েছে
-    <div className="flex h-[100dvh] w-full max-w-full overflow-hidden bg-[#0a0a0c]">
+    // মূল কনটেইনার: ফুল পেজ স্ক্রল বন্ধ করার জন্য h-[calc(100vh-64px)] এবং overflow-hidden যুক্ত করা হয়েছে
+    <div 
+      className="flex w-full overflow-hidden bg-[#0a0a0c]"
+      style={{ height: "calc(100dvh - 64px)" }} // Ensure your navbar height is accounted for (typically 64px)
+    >
       <div className="flex w-full h-full overflow-hidden">
         
-        {/* Sidebar List */}
-        <div className={`flex w-full flex-col border-r border-white/5 bg-[#0a0a0c] sm:w-[360px] lg:w-[400px] sm:shrink-0 h-full ${active ? "hidden sm:flex" : "flex"}`}>
+        {/* Sidebar List - Flex column structure ensuring inner scroll */}
+        <div className={`flex flex-col border-r border-white/5 bg-[#0a0a0c] w-full sm:w-[360px] lg:w-[400px] sm:shrink-0 h-full ${active ? "hidden sm:flex" : "flex"}`}>
           
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 pt-5 pb-3">
-            <h1 className="text-[26px] font-bold text-white tracking-tight">Chats</h1>
-            <div className="flex gap-2">
-              <button className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors">
-                <MoreHorizontal size={20} />
-              </button>
-              <button className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors">
-                <Edit size={18} />
-              </button>
-            </div>
+          {/* Sidebar Header */}
+          <div className="flex-none flex items-center justify-between px-4 pt-5 pb-3">
+            <h1 className="text-[24px] font-bold text-white tracking-tight">Chats</h1>
           </div>
           
           {/* Search Bar */}
-          <div className="px-4 pb-4">
-            <div className="flex items-center rounded-full bg-white/10 px-3 py-2 transition-colors focus-within:bg-white/15">
-              <Search size={18} className="text-white/40 shrink-0" />
+          <div className="flex-none px-4 pb-4">
+            <div className="flex items-center rounded-full bg-[#2a2a2b] px-3 py-2 transition-colors focus-within:bg-[#3a3a3b]">
+              <Search size={18} className="text-[#8e8e93] shrink-0" />
               <input 
                 type="text" 
                 placeholder="Search Messenger" 
-                className="ml-2 w-full bg-transparent text-[15px] text-white outline-none placeholder:text-white/40" 
+                className="ml-2 w-full bg-transparent text-[15px] text-white outline-none placeholder:text-[#8e8e93]" 
               />
             </div>
           </div>
-
-          {/* Filters */}
-          <div className="flex gap-2 overflow-x-auto px-4 pb-3 hide-scrollbar">
-            <button className="rounded-full bg-white/10 px-4 py-1.5 text-[14px] font-semibold text-white transition-colors hover:bg-white/20 whitespace-nowrap">
-              All
-            </button>
-            <button className="rounded-full px-4 py-1.5 text-[14px] font-semibold text-white/70 transition-colors hover:bg-white/5 whitespace-nowrap">
-              Unread
-            </button>
-            <button className="rounded-full px-4 py-1.5 text-[14px] font-semibold text-white/70 transition-colors hover:bg-white/5 whitespace-nowrap">
-              Groups
-            </button>
-          </div>
           
-          {/* Conversation List */}
-          <div className="flex-1 overflow-y-auto px-2 hide-scrollbar">
+          {/* Conversation List - Scrollable Area */}
+          <div className="flex-1 overflow-y-auto px-2 hide-scrollbar pb-4">
             {!convs || convs.length === 0 ? (
               <div className="px-4 py-8 text-center text-[15px] text-white/40">
                 No conversations yet. Message someone to start.
               </div>
             ) : (
-              <div className="flex flex-col gap-1 pb-4">
+              <div className="flex flex-col gap-[2px]">
                 {convs.map((c) => (
                   <button key={c.id} onClick={() => setActive(c.id)}
-                    className={`group relative flex w-full items-center gap-3 rounded-[12px] px-2 py-2.5 text-left transition-colors ${
+                    className={`group relative flex w-full items-center gap-3 rounded-[8px] px-2 py-2 text-left transition-colors ${
                       active === c.id ? "bg-white/10" : "hover:bg-white/5"
                     }`}
                   >
@@ -345,20 +312,20 @@ function MessagesInner() {
 
                     {/* Text content */}
                     <div className="min-w-0 flex-1 py-1">
-                      <p className="truncate text-[16px] font-medium text-white/95">{c.other.name}</p>
-                      <div className="flex items-center gap-1 text-[13px] mt-0.5">
-                        <p className={`truncate ${c.unread ? "font-semibold text-white" : "text-white/50"}`}>
+                      <p className="truncate text-[15px] font-medium text-[#e4e6eb]">{c.other.name}</p>
+                      <div className="flex items-center gap-1 text-[13px] mt-[2px]">
+                        <p className={`truncate ${c.unread ? "font-semibold text-white" : "text-[#8e8e93]"}`}>
                           {c.last_message || "Started a conversation"}
                         </p>
-                        <span className="shrink-0 text-white/50 px-0.5">·</span>
-                        <span className="shrink-0 text-white/50">{formatShortTime(c.last_at)}</span>
+                        <span className="shrink-0 text-[#8e8e93] px-0.5">·</span>
+                        <span className="shrink-0 text-[#8e8e93]">{formatShortTime(c.last_at)}</span>
                       </div>
                     </div>
 
                     {/* Unread Indicator */}
                     {c.unread > 0 && (
                       <div className="shrink-0 pr-2">
-                        <span className="block h-3.5 w-3.5 rounded-full bg-[#a344ff]" />
+                        <span className="block h-3 w-3 rounded-full bg-[#2e89ff]" />
                       </div>
                     )}
                   </button>
@@ -368,7 +335,7 @@ function MessagesInner() {
           </div>
         </div>
 
-        {/* Chat Pane Area */}
+        {/* Main Chat Pane Container */}
         <div className={`min-w-0 flex-1 bg-[#0f0f11] h-full ${active ? "flex" : "hidden sm:flex"}`}>
           {activeConv ? (
             <ChatPane conv={activeConv} meId={user.id} onBack={() => setActive(null)} />
@@ -382,6 +349,7 @@ function MessagesInner() {
             </div>
           )}
         </div>
+        
       </div>
     </div>
   );
@@ -398,3 +366,4 @@ export default function MessagesPage() {
     </Suspense>
   );
 }
+```eof
