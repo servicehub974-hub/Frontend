@@ -4,7 +4,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Send, MessageSquare, Info } from "lucide-react";
+import { ArrowLeft, Send, MessageSquare } from "lucide-react";
 import { api, apiGet } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/providers/auth-provider";
@@ -19,13 +19,6 @@ interface Conversation {
 }
 interface Msg { id: string; sender_id: string; body: string; created_at: string; }
 
-// সময় সুন্দরভাবে দেখানোর জন্য ছোট একটি হেল্পার ফাংশন
-function formatTime(dateString?: string) {
-  if (!dateString) return "";
-  const d = new Date(dateString);
-  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-}
-
 function ChatPane({ conv, meId, onBack }: { conv: Conversation; meId: string; onBack: () => void }) {
   const convId = conv.id;
   const qc = useQueryClient();
@@ -35,10 +28,10 @@ function ChatPane({ conv, meId, onBack }: { conv: Conversation; meId: string; on
   const { data: msgs } = useQuery({
     queryKey: ["messages", convId],
     queryFn: () => apiGet<Msg[]>(`/api/conversations/${convId}/messages`),
-    refetchInterval: 6000, 
+    refetchInterval: 6000, // fallback; realtime handles instant
   });
 
-  // Supabase Realtime
+  // Supabase Realtime — instant new messages
   useEffect(() => {
     const ch = supabase
       .channel(`conv-${convId}`)
@@ -58,12 +51,9 @@ function ChatPane({ conv, meId, onBack }: { conv: Conversation; meId: string; on
     qc.invalidateQueries({ queryKey: ["conversations"] });
   }, [convId, msgs?.length, qc]);
 
-  useEffect(() => { 
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" }); 
-  }, [msgs?.length]);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs?.length]);
 
-  const send = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault(); // ফর্ম সাবমিট রিলোড বন্ধ করার জন্য
+  const send = async () => {
     const body = text.trim();
     if (!body) return;
     setText("");
@@ -75,91 +65,45 @@ function ChatPane({ conv, meId, onBack }: { conv: Conversation; meId: string; on
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-[#0f0f11] sm:rounded-r-2xl">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-white/10 bg-white/[0.02] px-4 py-3 sm:rounded-tr-2xl">
-        <div className="flex items-center gap-3">
-          <button onClick={onBack} className="flex h-8 w-8 items-center justify-center rounded-full text-white/60 transition-colors hover:bg-white/10 hover:text-white sm:hidden">
-            <ArrowLeft size={20} />
-          </button>
-          <Link href={`/channel/${conv.other.id}`} className="group flex items-center gap-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={conv.other.avatar} alt="" className="h-10 w-10 rounded-full border border-white/10 object-cover transition-transform group-hover:scale-105" />
-            <div className="flex flex-col">
-              <span className="text-[15px] font-semibold text-white group-hover:underline">{conv.other.name}</span>
-              <span className="text-xs text-white/50">View channel</span>
-            </div>
-          </Link>
-        </div>
-        <button className="text-white/40 transition-colors hover:text-white">
-          <Info size={20} />
-        </button>
+    <div className="flex h-full min-h-0 flex-col">
+      {/* header */}
+      <div className="flex items-center gap-3 border-b border-white/5 px-4 py-3">
+        <button onClick={onBack} className="text-white/60 hover:text-white sm:hidden"><ArrowLeft size={20} /></button>
+        <Link href={`/channel/${conv.other.id}`} className="flex items-center gap-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={conv.other.avatar} alt="" className="h-9 w-9 rounded-full object-cover" />
+          <span className="font-semibold text-white">{conv.other.name}</span>
+        </Link>
       </div>
 
-      {/* Messages Area */}
-      <div className="flex-1 min-h-0 overflow-y-auto px-4 py-5 hide-scrollbar scroll-smooth">
-        <div className="flex flex-col gap-4">
-          {(msgs ?? []).map((m, i) => {
+      {/* messages */}
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 hide-scrollbar">
+        <div className="flex flex-col gap-2">
+          {(msgs ?? []).map((m) => {
             const mine = m.sender_id === meId;
-            const showAvatar = !mine && (i === 0 || msgs![i - 1].sender_id !== m.sender_id);
-            
             return (
-              <div key={m.id} className={`flex items-end gap-2.5 ${mine ? "justify-end" : "justify-start"}`}>
-                {!mine ? (
-                  showAvatar ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={conv.other.avatar} alt="" className="mb-4 h-7 w-7 shrink-0 rounded-full object-cover shadow-sm" />
-                  ) : (
-                    <div className="w-7 shrink-0" /> // Avatar এর জায়গা ফাকা রাখার জন্য
-                  )
-                ) : null}
-                
-                <div className={`group flex flex-col ${mine ? "items-end" : "items-start"} max-w-[75%]`}>
-                  <div className={`relative px-4 py-2.5 text-[15px] leading-relaxed shadow-sm ${
-                    mine 
-                      ? "rounded-2xl rounded-br-sm bg-gradient-to-br from-cyan-600 to-blue-600 text-white" 
-                      : "rounded-2xl rounded-bl-sm bg-white/10 text-white/95"
-                  }`}>
-                    {m.body}
-                  </div>
-                  <span className="mt-1 text-[10px] font-medium text-white/30 opacity-0 transition-opacity group-hover:opacity-100">
-                    {formatTime(m.created_at)}
-                  </span>
+              <div key={m.id} className={`flex items-end gap-2 ${mine ? "justify-end" : "justify-start"}`}>
+                {!mine && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={conv.other.avatar} alt="" className="h-6 w-6 shrink-0 rounded-full object-cover" />
+                )}
+                <div className={`max-w-[75%] rounded-2xl px-3.5 py-2 text-sm ${
+                  mine ? "bg-gradient-to-br from-cyan-600 to-violet-600 text-white" : "bg-white/10 text-white/90"
+                }`}>
+                  {m.body}
                 </div>
               </div>
             );
           })}
-          <div ref={bottomRef} className="h-1" />
+          <div ref={bottomRef} />
         </div>
       </div>
 
-      {/* Input Area */}
-      <div className="p-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
-        <form 
-          onSubmit={send}
-          className="flex items-end gap-2 rounded-3xl border border-white/10 bg-white/5 p-1.5 transition-colors focus-within:border-cyan-500/50 focus-within:bg-white/[0.07]"
-        >
-          <textarea 
-            value={text} 
-            onChange={(e) => setText(e.target.value)} 
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                send();
-              }
-            }}
-            placeholder="Type a message..." 
-            rows={1}
-            className="max-h-32 min-h-[40px] flex-1 resize-none bg-transparent px-4 py-2.5 text-[15px] text-white outline-none placeholder:text-white/30 hide-scrollbar" 
-          />
-          <button 
-            type="submit"
-            disabled={!text.trim()}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-cyan-500 text-white transition-all hover:bg-cyan-400 disabled:bg-white/10 disabled:text-white/30"
-          >
-            <Send size={18} className={text.trim() ? "ml-0.5" : ""} />
-          </button>
-        </form>
+      {/* input */}
+      <div className="flex items-center gap-2 border-t border-white/5 p-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
+        <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()}
+          placeholder="Message…" className="flex-1 rounded-full border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none placeholder:text-white/30 focus:border-cyan/50" />
+        <button onClick={send} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-black hover:bg-white/90"><Send size={16} /></button>
       </div>
     </div>
   );
@@ -180,7 +124,7 @@ function MessagesInner() {
     enabled: !!user && enabled,
   });
 
-  // Realtime update list
+  // Realtime: any new message updates the conversation list
   useEffect(() => {
     if (!user || !enabled) return;
     const ch = supabase
@@ -191,97 +135,51 @@ function MessagesInner() {
     return () => { supabase.removeChannel(ch); };
   }, [user, enabled, qc]);
 
-  if (loading) return (
-    <div className="flex h-[50vh] items-center justify-center">
-      <div className="h-6 w-6 animate-spin rounded-full border-2 border-cyan-500 border-t-transparent"></div>
-    </div>
-  );
-  
-  if (!enabled) return (
-    <div className="flex h-[50vh] items-center justify-center text-white/50">
-      Messaging is currently disabled.
-    </div>
-  );
-  
-  if (!user) return (
-      <div className="flex h-[60vh] flex-col items-center justify-center px-6 text-center">
-        <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-white/5">
-          <MessageSquare size={32} className="text-white/40" />
-        </div>
-        <h2 className="mb-2 text-xl font-semibold text-white">Your Messages</h2>
-        <p className="mb-8 max-w-sm text-[15px] text-white/50">Log in to chat with creators and view your conversation history.</p>
-        <button onClick={() => router.push("/login")} className="rounded-full bg-white px-8 py-2.5 font-semibold text-black transition-transform hover:scale-105 active:scale-95">
-          Log in
-        </button>
+  if (loading) return <div className="px-6 py-16 text-white/50">Loading…</div>;
+  if (!enabled) return <div className="px-6 py-16 text-center text-white/50">Messaging is currently disabled.</div>;
+  if (!user)
+    return (
+      <div className="px-6 py-16 text-center">
+        <MessageSquare size={28} className="mx-auto mb-3 text-white/40" />
+        <p className="text-white/60">Log in to view your messages.</p>
+        <button onClick={() => router.push("/login")} className="mt-4 rounded-full bg-white px-6 py-2 font-semibold text-black">Log in</button>
       </div>
     );
 
   const activeConv = convs?.find((c) => c.id === active) ?? null;
 
   return (
-    <div className="mx-auto flex h-[calc(100dvh-4rem)] w-full max-w-6xl overflow-hidden sm:h-[calc(100dvh-5rem)] sm:p-4">
-      <div className="flex w-full flex-col overflow-hidden sm:flex-row sm:rounded-2xl sm:border sm:border-white/10 sm:bg-white/[0.01] sm:shadow-2xl">
-        
-        {/* Sidebar List */}
-        <div className={`flex w-full flex-col border-r border-white/10 bg-[#0a0a0c] sm:w-[340px] sm:shrink-0 ${active ? "hidden sm:flex" : "flex"}`}>
-          <div className="flex items-center justify-between px-5 py-4">
-            <h1 className="text-xl font-bold text-white">Chats</h1>
-            {/* Optional: Add a new chat button or settings icon here */}
-          </div>
-          
-          <div className="flex-1 overflow-y-auto hide-scrollbar">
-            {!convs || convs.length === 0 ? (
-              <div className="flex flex-col items-center justify-center px-4 py-12 text-center">
-                <MessageSquare size={24} className="mb-3 text-white/20" />
-                <p className="text-[14px] text-white/40">No conversations yet.<br/>Message a creator from their channel.</p>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-0.5 p-2">
-                {convs.map((c) => (
-                  <button key={c.id} onClick={() => setActive(c.id)}
-                    className={`group relative flex w-full items-center gap-3 rounded-xl p-3 text-left transition-all ${
-                      active === c.id ? "bg-white/10" : "hover:bg-white/5"
-                    }`}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <div className="relative shrink-0">
-                      <img src={c.other.avatar} alt="" className="h-12 w-12 rounded-full object-cover" />
-                      {c.unread > 0 && (
-                        <span className="absolute -right-0.5 -top-0.5 h-3.5 w-3.5 rounded-full border-2 border-[#0a0a0c] bg-cyan-500" />
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="truncate font-semibold text-white">{c.other.name}</p>
-                        <span className="shrink-0 text-[11px] text-white/40">
-                          {formatTime(c.last_at) || ""}
-                        </span>
-                      </div>
-                      <p className={`truncate text-[13px] ${c.unread ? "font-medium text-white/90" : "text-white/50"}`}>
-                        {c.last_message || "Started a conversation"}
-                      </p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Chat Pane */}
-        <div className={`min-w-0 flex-1 bg-[#0f0f11] ${active ? "flex" : "hidden sm:flex"}`}>
-          {activeConv ? (
-            <ChatPane conv={activeConv} meId={user.id} onBack={() => setActive(null)} />
+    <div className="mx-auto flex h-[calc(100dvh-4rem)] w-full max-w-6xl overflow-hidden sm:h-[calc(100dvh-5rem)] sm:gap-0 sm:px-4 sm:py-3">
+      {/* list */}
+      <div className={`flex w-full flex-col border-white/5 sm:w-80 sm:shrink-0 sm:rounded-l-2xl sm:border ${active ? "hidden sm:flex" : "flex"}`}>
+        <h1 className="border-b border-white/5 px-4 py-4 text-xl font-bold text-white">Chats</h1>
+        <div className="flex-1 overflow-y-auto hide-scrollbar">
+          {!convs || convs.length === 0 ? (
+            <p className="px-4 py-6 text-sm text-white/40">No conversations yet. Message a creator from their channel.</p>
           ) : (
-            <div className="flex h-full w-full flex-col items-center justify-center text-center">
-              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white/5">
-                <MessageSquare size={28} className="text-white/20" />
-              </div>
-              <p className="text-lg font-medium text-white/80">Your Messages</p>
-              <p className="mt-1 text-sm text-white/40">Select a conversation to start chatting.</p>
-            </div>
+            convs.map((c) => (
+              <button key={c.id} onClick={() => setActive(c.id)}
+                className={`flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-white/5 ${active === c.id ? "bg-white/5" : ""}`}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={c.other.avatar} alt="" className="h-12 w-12 rounded-full object-cover" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium text-white">{c.other.name}</p>
+                  <p className={`truncate text-xs ${c.unread ? "font-semibold text-white" : "text-white/50"}`}>{c.last_message || "New conversation"}</p>
+                </div>
+                {c.unread > 0 && <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-cyan" />}
+              </button>
+            ))
           )}
         </div>
+      </div>
+
+      {/* chat */}
+      <div className={`min-w-0 flex-1 border-white/5 sm:rounded-r-2xl sm:border sm:border-l-0 ${active ? "flex" : "hidden sm:flex sm:items-center sm:justify-center"}`}>
+        {activeConv ? (
+          <ChatPane conv={activeConv} meId={user.id} onBack={() => setActive(null)} />
+        ) : (
+          <p className="text-sm text-white/40">Select a conversation</p>
+        )}
       </div>
     </div>
   );
@@ -289,11 +187,7 @@ function MessagesInner() {
 
 export default function MessagesPage() {
   return (
-    <Suspense fallback={
-      <div className="flex h-screen w-full items-center justify-center">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-cyan-500 border-t-transparent"></div>
-      </div>
-    }>
+    <Suspense fallback={<div className="px-6 py-16 text-white/50">Loading…</div>}>
       <MessagesInner />
     </Suspense>
   );
