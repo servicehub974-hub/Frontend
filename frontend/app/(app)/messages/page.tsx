@@ -75,69 +75,104 @@ function ChatPane({ conv, meId, onBack, isOnline }: { conv: Conversation; meId: 
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div className="flex flex-col h-full w-full bg-zinc-950">
       {/* header */}
-      <div className="flex h-[64px] shrink-0 items-center gap-3 border-b border-white/5 px-4">
-        <button onClick={onBack} className="text-cyan hover:opacity-80 sm:hidden"><ArrowLeft size={22} /></button>
-        <Link href={`/channel/${conv.other.id}`} className="flex items-center gap-3">
+      <div className="flex h-16 shrink-0 items-center gap-3 border-b border-white/5 bg-zinc-900/50 px-4">
+        <button onClick={onBack} className="text-cyan-400 hover:opacity-80 sm:hidden">
+          <ArrowLeft size={24} />
+        </button>
+        <Link href={`/channel/${conv.other.id}`} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
           <div className="relative">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={conv.other.avatar} alt="" className="h-10 w-10 rounded-full object-cover" />
-            {isOnline && <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-[#0a0a0f] bg-green-500" />}
+            <img src={conv.other.avatar} alt="" className="h-10 w-10 rounded-full object-cover border border-white/10" />
+            {isOnline && <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-zinc-950 bg-green-500" />}
           </div>
           <div>
-            <p className="font-semibold leading-tight text-white">{conv.other.name}</p>
-            <p className="text-xs text-white/40">{isOnline ? "Active now" : "Offline"}</p>
+            <p className="font-semibold leading-tight text-zinc-100">{conv.other.name}</p>
+            <p className="text-xs text-zinc-400">{isOnline ? "Active now" : "Offline"}</p>
           </div>
         </Link>
       </div>
 
       {/* messages */}
-      <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 hide-scrollbar">
-        <div className="flex flex-col gap-1">
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 hide-scrollbar bg-zinc-950">
+        <div className="flex flex-col gap-1.5">
           {(msgs ?? []).map((m, idx) => {
             const mine = m.sender_id === meId;
             const arr = msgs ?? [];
             const showAvatar = !mine && (idx === arr.length - 1 || arr[idx + 1]?.sender_id !== m.sender_id);
             const isLike = m.body === "👍";
+            const isSequence = idx > 0 && arr[idx - 1]?.sender_id === m.sender_id;
+
             return (
-              <div key={m.id} className={`flex items-end gap-2 ${mine ? "justify-end" : "justify-start"}`}>
-                {!mine && (showAvatar
-                  ? // eslint-disable-next-line @next/next/no-img-element
-                    <img src={conv.other.avatar} alt="" className="h-6 w-6 shrink-0 rounded-full object-cover" />
-                  : <div className="w-6 shrink-0" />)}
+              <div key={m.id} className={`flex items-end gap-2 w-full ${mine ? "justify-end" : "justify-start"} ${isSequence ? "mt-0" : "mt-2"}`}>
+                {!mine && (
+                  showAvatar ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={conv.other.avatar} alt="" className="h-7 w-7 shrink-0 rounded-full object-cover mb-0.5 border border-white/10" />
+                  ) : (
+                    <div className="w-7 shrink-0" />
+                  )
+                )}
+                
                 {isLike ? (
-                  <div className="text-4xl">👍</div>
+                  <div className="text-4xl hover:scale-110 transition-transform cursor-pointer drop-shadow-lg">👍</div>
                 ) : (
-                  <div className={`max-w-[68%] whitespace-pre-wrap break-words rounded-2xl px-3.5 py-2 text-sm ${mine ? "bg-gradient-to-br from-cyan-600 to-violet-600 text-white" : "bg-white/10 text-white/90"}`}>
+                  <div 
+                    className={`max-w-[75%] md:max-w-[65%] whitespace-pre-wrap break-words px-4 py-2.5 text-[15px] leading-tight shadow-sm
+                    ${mine 
+                      ? `bg-cyan-600 text-white rounded-2xl ${isSequence ? 'rounded-tr-sm' : ''}` 
+                      : `bg-zinc-800 text-zinc-100 rounded-2xl ${isSequence ? 'rounded-tl-sm' : ''}`
+                    }`}
+                  >
                     {m.body}
                   </div>
                 )}
               </div>
             );
           })}
-          <div ref={bottomRef} />
+          <div ref={bottomRef} className="h-1" />
         </div>
       </div>
 
       {/* emoji panel */}
       {showEmoji && (
-        <div className="flex flex-wrap gap-1 border-t border-white/5 px-3 py-2">
+        <div className="flex flex-wrap gap-2 border-t border-white/5 bg-zinc-900/50 px-4 py-3 shadow-lg">
           {EMOJIS.map((e) => (
-            <button key={e} onClick={() => setText((t) => t + e)} className="rounded-lg p-1.5 text-xl hover:bg-white/10">{e}</button>
+            <button key={e} onClick={() => setText((t) => t + e)} className="rounded-lg p-1.5 text-2xl hover:bg-white/10 transition-colors">
+              {e}
+            </button>
           ))}
         </div>
       )}
 
       {/* input */}
-      <div className="flex items-center gap-2 border-t border-white/5 p-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
-        <button onClick={() => setShowEmoji((s) => !s)} className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full hover:bg-white/10 ${showEmoji ? "text-cyan" : "text-white/50"}`}><Smile size={20} /></button>
-        <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()}
-          placeholder="Aa" className="flex-1 rounded-full border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none placeholder:text-white/30 focus:border-cyan/50" />
+      <div className="flex items-center gap-2 border-t border-white/5 bg-zinc-900/50 p-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] shrink-0">
+        <button 
+          onClick={() => setShowEmoji((s) => !s)} 
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full hover:bg-white/10 transition-colors ${showEmoji ? "text-cyan-400" : "text-zinc-400"}`}
+        >
+          <Smile size={22} />
+        </button>
+        
+        <div className="flex-1 bg-zinc-800/80 rounded-full flex items-center pr-1 border border-transparent focus-within:border-cyan-500/50 transition-colors">
+          <input 
+            value={text} 
+            onChange={(e) => setText(e.target.value)} 
+            onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && send()}
+            placeholder="Aa" 
+            className="w-full bg-transparent px-4 py-2.5 text-[15px] text-zinc-100 outline-none placeholder:text-zinc-500" 
+          />
+        </div>
+        
         {text.trim() ? (
-          <button onClick={() => send()} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-black hover:bg-white/90"><Send size={16} /></button>
+          <button onClick={() => send()} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-cyan-600 text-white hover:bg-cyan-500 transition-colors shadow-md">
+            <Send size={18} className="ml-1" />
+          </button>
         ) : (
-          <button onClick={() => send("👍")} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-cyan hover:bg-white/10"><ThumbsUp size={20} className="fill-cyan" /></button>
+          <button onClick={() => send("👍")} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-cyan-400 hover:bg-white/10 transition-colors">
+            <ThumbsUp size={24} className="fill-cyan-400" />
+          </button>
         )}
       </div>
     </div>
@@ -161,7 +196,6 @@ function MessagesInner() {
     enabled: !!user && enabled,
   });
 
-  // conversation-list realtime
   useEffect(() => {
     if (!user || !enabled) return;
     const ch = supabase.channel("conv-list")
@@ -171,7 +205,6 @@ function MessagesInner() {
     return () => { supabase.removeChannel(ch); };
   }, [user, enabled, qc]);
 
-  // presence — who's online (active/inactive)
   useEffect(() => {
     if (!user || !enabled) return;
     const ch = supabase.channel("presence:online", { config: { presence: { key: user.id } } });
@@ -180,14 +213,17 @@ function MessagesInner() {
     return () => { supabase.removeChannel(ch); };
   }, [user, enabled]);
 
-  if (loading) return <div className="px-6 py-16 text-white/50">Loading…</div>;
-  if (!enabled) return <div className="px-6 py-16 text-center text-white/50">Messaging is currently disabled.</div>;
+  if (loading) return <div className="flex h-screen items-center justify-center text-zinc-500">Loading messages...</div>;
+  if (!enabled) return <div className="flex h-screen items-center justify-center text-zinc-500">Messaging is currently disabled.</div>;
   if (!user)
     return (
-      <div className="px-6 py-16 text-center">
-        <MessageSquare size={28} className="mx-auto mb-3 text-white/40" />
-        <p className="text-white/60">Log in to view your messages.</p>
-        <button onClick={() => router.push("/login")} className="mt-4 rounded-full bg-white px-6 py-2 font-semibold text-black">Log in</button>
+      <div className="flex h-screen flex-col items-center justify-center px-6 text-center bg-zinc-950">
+        <MessageSquare size={48} className="mb-4 text-zinc-700" />
+        <h2 className="text-xl font-semibold text-zinc-200 mb-2">Welcome to Messages</h2>
+        <p className="text-zinc-500 mb-6 max-w-sm">Log in to chat with your friends and connections.</p>
+        <button onClick={() => router.push("/login")} className="rounded-full bg-white px-8 py-2.5 font-semibold text-zinc-900 hover:bg-zinc-200 transition-colors">
+          Log in
+        </button>
       </div>
     );
 
@@ -195,36 +231,60 @@ function MessagesInner() {
   const activeConv = convs?.find((c) => c.id === active) ?? null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 top-16 z-30 grid grid-cols-1 overflow-hidden bg-deep sm:left-[72px] sm:top-20 lg:left-64 sm:grid-cols-[360px_minmax(0,1fr)]">
-      {/* list */}
-      <div className={`flex min-w-0 flex-col border-r border-white/5 ${active ? "hidden sm:flex" : "flex"}`}>
-        <div className="px-4 pb-2 pt-4">
-          <h1 className="mb-3 text-2xl font-bold tracking-tight text-white">Chats</h1>
-          <div className="flex items-center gap-2 rounded-full bg-white/5 px-3 py-2">
-            <Search size={16} className="text-white/40" />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search chats" className="w-full bg-transparent text-sm text-white outline-none placeholder:text-white/30" />
+    // FULL SCREEN HEIGHT LAYOUT
+    <div className="flex h-screen w-full bg-zinc-950 overflow-hidden pt-16 sm:pt-20 lg:pl-64">
+      
+      {/* list (Sidebar) */}
+      <div className={`flex flex-col w-full sm:w-[350px] lg:w-[400px] border-r border-white/5 bg-zinc-950 flex-shrink-0 transition-all duration-300 ${active ? "hidden sm:flex" : "flex"}`}>
+        <div className="px-4 pb-2 pt-4 shrink-0">
+          <h1 className="mb-4 text-2xl font-bold tracking-tight text-zinc-100">Chats</h1>
+          <div className="flex items-center gap-2 rounded-full bg-zinc-900 px-4 py-2 border border-white/5 focus-within:border-white/20 transition-colors">
+            <Search size={18} className="text-zinc-500" />
+            <input 
+              value={q} 
+              onChange={(e) => setQ(e.target.value)} 
+              placeholder="Search Messenger" 
+              className="w-full bg-transparent text-[15px] text-zinc-100 outline-none placeholder:text-zinc-500" 
+            />
           </div>
         </div>
-        <div className="flex-1 overflow-y-auto px-2 pb-4 hide-scrollbar">
+        
+        <div className="flex-1 overflow-y-auto px-2 pb-4 mt-2 hide-scrollbar">
           {list.length === 0 ? (
-            <p className="px-2 py-6 text-sm text-white/40">No conversations. Message someone from their channel.</p>
+            <div className="px-4 py-8 text-center text-sm text-zinc-500">
+              <p>No conversations found.</p>
+            </div>
           ) : (
             list.map((c) => {
               const unread = c.unread > 0;
+              const isActive = active === c.id;
+              
               return (
-                <button key={c.id} onClick={() => setActive(c.id)}
-                  className={`flex w-full items-center gap-3 rounded-xl p-2 text-left transition-colors hover:bg-white/5 ${active === c.id ? "bg-white/5" : ""}`}>
+                <button 
+                  key={c.id} 
+                  onClick={() => setActive(c.id)}
+                  className={`flex w-full items-center gap-3 rounded-xl p-2.5 text-left transition-colors mb-1 
+                    ${isActive ? "bg-white/10" : "hover:bg-white/5"}
+                  `}
+                >
                   <div className="relative shrink-0">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={c.other.avatar} alt="" className="h-14 w-14 rounded-full object-cover" />
-                    {online.has(c.other.id) && <span className="absolute bottom-0.5 right-0.5 h-3.5 w-3.5 rounded-full border-2 border-[#0a0a0f] bg-green-500" />}
+                    <img src={c.other.avatar} alt="" className="h-14 w-14 rounded-full object-cover border border-white/10" />
+                    {online.has(c.other.id) && <span className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-zinc-950 bg-green-500" />}
                   </div>
+                  
                   <div className="min-w-0 flex-1">
-                    <p className={`truncate ${unread ? "font-bold text-white" : "font-semibold text-white"}`}>{c.other.name}</p>
+                    <div className="flex justify-between items-baseline mb-0.5">
+                      <p className={`truncate pr-2 text-[15px] ${unread ? "font-bold text-zinc-100" : "font-semibold text-zinc-200"}`}>
+                        {c.other.name}
+                      </p>
+                    </div>
                     <div className="flex items-center gap-1 text-[13px]">
-                      <p className={`flex-1 truncate ${unread ? "font-semibold text-white" : "text-white/45"}`}>{c.last_message || "New conversation"}</p>
-                      <span className="shrink-0 text-white/30">· {shortTime(c.last_at)}</span>
-                      {unread && <span className="ml-1 h-2.5 w-2.5 shrink-0 rounded-full bg-cyan" />}
+                      <p className={`flex-1 truncate ${unread ? "font-semibold text-zinc-200" : "text-zinc-400"}`}>
+                        {c.last_message || "New conversation"}
+                      </p>
+                      <span className="shrink-0 text-zinc-500">· {shortTime(c.last_at)}</span>
+                      {unread && <span className="ml-2 h-2.5 w-2.5 shrink-0 rounded-full bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.6)]" />}
                     </div>
                   </div>
                 </button>
@@ -234,14 +294,16 @@ function MessagesInner() {
         </div>
       </div>
 
-      {/* chat */}
-      <div className={`min-w-0 ${active ? "flex" : "hidden sm:flex sm:items-center sm:justify-center"}`}>
+      {/* chat Area */}
+      <div className={`flex-1 flex-col h-full bg-zinc-950 min-w-0 relative ${active ? "flex" : "hidden sm:flex"}`}>
         {activeConv ? (
           <ChatPane conv={activeConv} meId={user.id} onBack={() => setActive(null)} isOnline={online.has(activeConv.other.id)} />
         ) : (
-          <div className="text-center text-white/40">
-            <MessageSquare size={40} className="mx-auto mb-3 text-white/20" />
-            <p className="text-sm">Select a chat to start messaging</p>
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-950 z-20">
+            <div className="h-24 w-24 rounded-full bg-zinc-900 flex items-center justify-center mb-4">
+              <MessageSquare size={48} className="text-zinc-700" />
+            </div>
+            <h2 className="text-xl font-semibold text-zinc-400">Select a chat to start messaging</h2>
           </div>
         )}
       </div>
@@ -251,7 +313,7 @@ function MessagesInner() {
 
 export default function MessagesPage() {
   return (
-    <Suspense fallback={<div className="px-6 py-16 text-white/50">Loading…</div>}>
+    <Suspense fallback={<div className="flex h-screen items-center justify-center text-zinc-500 bg-zinc-950">Loading…</div>}>
       <MessagesInner />
     </Suspense>
   );
