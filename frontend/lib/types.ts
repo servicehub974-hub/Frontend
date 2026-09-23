@@ -1,0 +1,20 @@
+export type Tier = "free" | "gems" | "vip";
+
+export interface ContentItem {
+  id: string;
+  title: string;
+  thumbnail: string;
+  is_video: boolean;
+  is_short?: boolean;
+  duration: string | null;
+  creator: { name: string; avatar: string; verified: boolean; vip_tier?: string | null };
+  tier: Tier;
+  price_gems: number | null;
+  views: string;
+  time_ago: string;
+}
+
+export interface FeedPage {
+  items: ContentItem[];
+  next_cursor: string | null;
+}
